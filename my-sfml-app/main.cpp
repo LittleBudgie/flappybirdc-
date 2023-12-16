@@ -1,40 +1,68 @@
-
-//
-// Disclaimer:
-// ----------
-//
-// This code will work only if you selected window, graphics and audio.
-//
-// Note that the "Run Script" build phase will copy the required frameworks
-// or dylibs to your application bundle so you can execute it on any OS X
-// computer.
-//
-// Your resource files (images, sounds, fonts, ...) are also copied to your
-// application bundle. To get the path to these resources, use the helper
-// function `resourcePath()` from ResourcePath.hpp
-//
+/*
+Flappy Bird Project sPeriod 2
+ */
 
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 #include <iostream>
-
-// Here is a small helper for you! Have a look.
 #include "ResourcePath.hpp"
+
+
+/** This function reads in the app icon
+ @param: the SFML window of the game
+ */
+
+void load_app_icon(sf::RenderWindow& app_window)
+{
+    sf::Image icon;
+    if (!icon.loadFromFile("/Users/suhanashrivastava/SFML project/flappybirdc-/my-sfml-app/flappybird.png"))
+    {
+        return EXIT_FAILURE;
+    }
+    app_window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
+}
+
+/** This function creates a pillar (RectangleShape from SFML)
+ @param: width and height of rectangle
+ @return: rectangle created
+ */
+
+sf::RectangleShape create_pillar(int width, int height)
+{
+    sf::RectangleShape rectangle(sf::Vector2f(width, height));
+    rectangle.setFillColor(sf::Color::Green);
+    rectangle.setOutlineColor(sf::Color::Black);
+    rectangle.setOutlineThickness(4);
+    return rectangle;
+}
+
+/** This function creates a bounding box around the pillars to use for collision checks
+ @param: sf::RectangleShape rectangle (a pillar)
+ @return: sf::FloatRect adjusted_rect (the bounding box)
+ */
+
+sf::FloatRect adjusted_bounds(sf::RectangleShape rectangle)
+{
+    sf::FloatRect adjusted_rect(
+        rectangle.getGlobalBounds().width * 0.1 + rectangle.getGlobalBounds().left,
+        rectangle.getGlobalBounds().height * 0.1 + rectangle.getGlobalBounds().top,
+        rectangle.getGlobalBounds().width * 0.2,
+        rectangle.getGlobalBounds().height * 0.2
+    );
+    return adjusted_rect;
+}
 
 int main(int, char const**)
 {
+    // GAME SETUP
     // Create the main window
     sf::RenderWindow window(sf::VideoMode(800, 600), "SFML window");
 
     // Set the Icon
-    sf::Image icon;
-    if (!icon.loadFromFile(resourcePath() + "icon.png"))
-    {
-        return EXIT_FAILURE;
-    }
-    window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
+    load_app_icon(window);
 
     // Load background
+    
     sf::Texture texture;
     if (!texture.loadFromFile(resourcePath() + "background.jpg"))
     {
@@ -43,23 +71,33 @@ int main(int, char const**)
     sf::Sprite sprite(texture);
     
     // Load flappy bird
-    
-    sf::Texture texturetwo;
-    if (!texturetwo.loadFromFile("/Users/suhanashrivastava/SFML project/flappybirdc-/my-sfml-app/flappybird.png"))
+    sf::Texture texture_two;
+    if (!texture_two.loadFromFile("/Users/suhanashrivastava/SFML project/flappybirdc-/my-sfml-app/flappybird.png"))
     {
         return EXIT_FAILURE;
     }
+    sf::Sprite flappy_sprite;
+    flappy_sprite.setTexture(texture_two);
+    flappy_sprite.setScale(sf::Vector2f(0.15f, 0.15f));
     
-    //creating sprite and associated properties
-    sf::Sprite flappysprite;
-    double y = 0;
-    double dropspeedofbird = 0;
-    double speedofpillarmove = 0;
-    bool drawsprite = false;
-    flappysprite.setTexture(texturetwo);
-    flappysprite.setScale(sf::Vector2f(0.15f, 0.15f));
+    //Global variables
+    double flappy_sprite_y = 0;
+    double drop_speed_of_bird = 0;
+    double speed_of_pillar_move = 0;
+    bool draw_sprite = false;
+    
+    //these keep track of the x-component of position
+    double x_rectangle_one = 250.0;
+    double x_rectangle_three = 520.0;
+    double x_rectangle_five = 800.0;
+    
+    //to prevent using magic numbers, as discussed in class, here are constants:
+    const double LOWER_BOUND_Y = -20;
+    const double UPPER_BOUND_Y = 500;
+    float random_y_scale = 0.15;
 
-    // Opening Game Screen with Text
+    // OPENING GAME SCREEN STYLE
+    // Getting text
     sf::Font font;
     if (!font.loadFromFile("/Users/suhanashrivastava/SFML project/flappybirdc-/my-sfml-app/PressStart2P-Regular.ttf"))
     {
@@ -73,14 +111,14 @@ int main(int, char const**)
     text_two.setPosition(150, 315);
 
     // Load game screen music to play
-    sf::Music gamescreenmusic;
-    if (!gamescreenmusic.openFromFile("/Users/suhanashrivastava/SFML project/flappybirdc-/my-sfml-app/049269_funny-fanfare-2wav-65260.mp3"))
+    sf::Music game_screen_music;
+    if (!game_screen_music.openFromFile("/Users/suhanashrivastava/SFML project/flappybirdc-/my-sfml-app/049269_funny-fanfare-2wav-65260.mp3"))
     {
         return EXIT_FAILURE;
     }
 
     // Play game screen music
-    //gamescreenmusic.play();
+    //game_screen_music.play();
     
     // Load background music for game
     sf::Music music;
@@ -90,35 +128,19 @@ int main(int, char const**)
     }
     
     //Creating pillars
-    sf::RectangleShape rectangle_one(sf::Vector2f(50, 100));
-    rectangle_one.setFillColor(sf::Color::Yellow);
-    sf::RectangleShape rectangle_two(sf::Vector2f(50, 150));
-    rectangle_two.setFillColor(sf::Color::Yellow);
-    sf::RectangleShape rectangle_three(sf::Vector2f(50, 52));
-    rectangle_three.setFillColor(sf::Color::Yellow);
-    sf::RectangleShape rectangle_four(sf::Vector2f(50, 100));
-    rectangle_four.setFillColor(sf::Color::Yellow);
-    sf::RectangleShape rectangle_five(sf::Vector2f(50, 150));
-    rectangle_five.setFillColor(sf::Color::Yellow);
-    sf::RectangleShape rectangle_six(sf::Vector2f(50, 150));
-    rectangle_six.setFillColor(sf::Color::Yellow);
+    sf::RectangleShape rectangle_one = create_pillar(50, 100);
+    sf::RectangleShape rectangle_two = create_pillar(50, 150);
+    sf::RectangleShape rectangle_three = create_pillar(50, 52);
+    sf::RectangleShape rectangle_four = create_pillar(50, 100);
+    sf::RectangleShape rectangle_five = create_pillar(50, 150);
+    sf::RectangleShape rectangle_six = create_pillar(50, 150);
     
-    
-    //these keep track of the x-component of position
-    double x_rectangle_one = 250.0;
-    double x_rectangle_three = 520.0;
-    double x_rectangle_five = 800.0;
-    //to prevent using magic numbers, as discussed in class, here are constants:
-    const double LOWER_BOUND_Y = -20;
-    const double UPPER_BOUND_Y = 500;
-    float random_y_scale = 0.15;
-    
-    // Start the game loop
+    //GAME WINDOW CONTROL FUNCTIONS
     while (window.isOpen())
     {
         // Process events & set positions on variables
         sf::Event event;
-        flappysprite.setPosition(50, y);
+        flappy_sprite.setPosition(50, flappy_sprite_y);
         rectangle_one.setPosition(x_rectangle_one, LOWER_BOUND_Y);
         rectangle_two.setPosition(x_rectangle_one, UPPER_BOUND_Y);
         rectangle_three.setPosition(x_rectangle_three, LOWER_BOUND_Y);
@@ -127,57 +149,99 @@ int main(int, char const**)
         rectangle_six.setPosition(x_rectangle_five, UPPER_BOUND_Y);
         
         // Always have flappy bird dropping a little
-        if (y <=500)
+        if (flappy_sprite_y <=500)
         {
-            y += dropspeedofbird;
+            flappy_sprite_y += drop_speed_of_bird;
         }
         
         //moving pillars to the left and having them appear again
         if (x_rectangle_one >= 0)
         {
-            x_rectangle_one -= speedofpillarmove;
+            x_rectangle_one -= speed_of_pillar_move;
         }
         else
         {
             x_rectangle_one = 1000.0;
-            random_y_scale = (int(rand()) % (4 - 1 + 1)) + 1;
+            random_y_scale = (int(rand()) % (2 - 1 + 1)) + 1;
             rectangle_one.setScale(1, random_y_scale);
+            //update_pillar(rectangle_one, x_rectangle_one, random_y_scale);
         }
         
         if (x_rectangle_three >= 0)
         {
-            x_rectangle_three -= speedofpillarmove;
+            x_rectangle_three -= speed_of_pillar_move;
         }
         else
         {
             x_rectangle_three = 1000.0;
-            random_y_scale = (int(rand()) % (4 - 1 + 1)) + 1;
+            random_y_scale = (int(rand()) % (2 - 1 + 1)) + 1;
             rectangle_three.setScale(1, random_y_scale);
         }
         
         if (x_rectangle_five >= 0)
         {
-            x_rectangle_five -= speedofpillarmove;
+            x_rectangle_five -= speed_of_pillar_move;
         }
         else
         {
+            random_y_scale = (int(rand()) % (2 - 1 + 1)) + 1;
             rectangle_five.setScale(1, random_y_scale);
             x_rectangle_five = 1000.0;
         }
         
+        //create the bounding boxes for the six pillars
+        sf::FloatRect adjusted_bounds_rect1 = adjusted_bounds(rectangle_one);
+        sf::FloatRect adjusted_bounds_rect2 = adjusted_bounds(rectangle_two);
+        sf::FloatRect adjusted_bounds_rect3 = adjusted_bounds(rectangle_three);
+        sf::FloatRect adjusted_bounds_rect4 = adjusted_bounds(rectangle_four);
+        sf::FloatRect adjusted_bounds_rect5 = adjusted_bounds(rectangle_five);
+        sf::FloatRect adjusted_bounds_rect6 = adjusted_bounds(rectangle_six);
+        sf::FloatRect flappy_sprite_bounds = flappy_sprite.getGlobalBounds();
+    
+        //check if flappy sprite intersects the bounding boxes around pillars
+        if (flappy_sprite_bounds.intersects(adjusted_bounds_rect1)
+            || flappy_sprite_bounds.intersects(adjusted_bounds_rect2)
+            || flappy_sprite_bounds.intersects(adjusted_bounds_rect3)
+            || flappy_sprite_bounds.intersects(adjusted_bounds_rect4)
+            || flappy_sprite_bounds.intersects(adjusted_bounds_rect5)
+            || flappy_sprite_bounds.intersects(adjusted_bounds_rect6)
+        )
+        {
+            draw_sprite = false;
+            drop_speed_of_bird = 0;
+            speed_of_pillar_move = 0;
+            text.setString("GAME OVER! :(");
+            text_two.setString("Press R to play again.");
+        }
+                
         while (window.pollEvent(event))
         {
             //If User Wants to Play Game
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::P)
             {
-                drawsprite = true;
-                gamescreenmusic.stop();
+                window.clear();
+                draw_sprite = true;
+                game_screen_music.stop();
                 //music.play();
-                dropspeedofbird = 0.25;
-                speedofpillarmove = 0.09;
+                drop_speed_of_bird = 0.25;
+                speed_of_pillar_move = 0.09;
                 text.setString(" ");
                 text_two.setString(" ");
             }
+            
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R)
+            {
+                x_rectangle_one = -200.0;
+                x_rectangle_three = 500.0;
+                x_rectangle_five = 1000.0;
+                draw_sprite = true;
+                //music.play();
+                drop_speed_of_bird = 0.25;
+                speed_of_pillar_move = 0.09;
+                text.setString(" ");
+                text_two.setString(" ");
+            }
+            
             // Close window: exit
             if (event.type == sf::Event::Closed)
             {
@@ -193,19 +257,17 @@ int main(int, char const**)
             // Pressing space moves flappy bird up
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Space)
             {
-                if (y >= -25)
+                if (flappy_sprite_y >= -25)
                 {
-                    y-=50;
+                    flappy_sprite_y-=50;
                 }
             }
         }
         // Clear screen
         window.clear();
-
-        // Draw background
         
-        //Draw flappy bird
-        if (drawsprite == true)
+        //Draw all sprites
+        if (draw_sprite == true)
         {
             window.draw(sprite);
             window.draw(rectangle_one);
@@ -214,7 +276,7 @@ int main(int, char const**)
             window.draw(rectangle_four);
             window.draw(rectangle_five);
             window.draw(rectangle_six);
-            window.draw(flappysprite);
+            window.draw(flappy_sprite);
         }
 
         // Draw the game screen text
