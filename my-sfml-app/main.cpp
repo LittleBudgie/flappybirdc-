@@ -1,5 +1,5 @@
 /*
-Flappy Bird Project sPeriod 2
+Flappy Bird Project Period 2
  */
 
 #include <SFML/Audio.hpp>
@@ -7,8 +7,9 @@ Flappy Bird Project sPeriod 2
 #include <iostream>
 #include "ResourcePath.hpp"
 
+//MODULE 0: These functions belong to their individual modules, but were unable to go in the main function and thus are here. The rest of the code is organized in it's respective modules.
 
-/** This function reads in the app icon
+/** This function reads in the app icon (part of MODULE 1: SETUP)
  @param: the SFML window of the game
  */
 
@@ -22,7 +23,7 @@ void load_app_icon(sf::RenderWindow& app_window)
     app_window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
 }
 
-/** This function creates a pillar (RectangleShape from SFML)
+/** This function creates a pillar (RectangleShape from SFML) (part of MODULE 2: PILLAR SETUP/CONTROL)
  @param: width and height of rectangle
  @return: rectangle created
  */
@@ -36,7 +37,7 @@ sf::RectangleShape create_pillar(int width, int height)
     return rectangle;
 }
 
-/** This function creates a bounding box around the pillars to use for collision checks
+/** This function creates a bounding box around the pillars to use for collision checks (part of MODULE 2: PILLAR SETUP/CONTROL)
  @param: sf::RectangleShape rectangle (a pillar)
  @return: sf::FloatRect adjusted_rect (the bounding box)
  */
@@ -54,7 +55,8 @@ sf::FloatRect adjusted_bounds(sf::RectangleShape rectangle)
 
 int main(int, char const**)
 {
-    // GAME SETUP
+
+// MODULE 1 – GAME SETUP
     // Create the main window
     sf::RenderWindow window(sf::VideoMode(800, 600), "SFML window");
 
@@ -118,7 +120,7 @@ int main(int, char const**)
     }
 
     // Play game screen music
-    //game_screen_music.play();
+    game_screen_music.play();
     
     // Load background music for game
     sf::Music music;
@@ -135,24 +137,33 @@ int main(int, char const**)
     sf::RectangleShape rectangle_five = create_pillar(50, 150);
     sf::RectangleShape rectangle_six = create_pillar(50, 150);
     
-    //GAME WINDOW CONTROL FUNCTIONS
+// END OF MODULE 1
+    
     while (window.isOpen())
     {
+        
+//MODULE 2: BIRD CONTROL
         // Process events & set positions on variables
         sf::Event event;
+        
         flappy_sprite.setPosition(50, flappy_sprite_y);
-        rectangle_one.setPosition(x_rectangle_one, LOWER_BOUND_Y);
-        rectangle_two.setPosition(x_rectangle_one, UPPER_BOUND_Y);
-        rectangle_three.setPosition(x_rectangle_three, LOWER_BOUND_Y);
-        rectangle_four.setPosition(x_rectangle_three, UPPER_BOUND_Y);
-        rectangle_five.setPosition(x_rectangle_five, LOWER_BOUND_Y);
-        rectangle_six.setPosition(x_rectangle_five, UPPER_BOUND_Y);
         
         // Always have flappy bird dropping a little
         if (flappy_sprite_y <=500)
         {
             flappy_sprite_y += drop_speed_of_bird;
         }
+        
+//END OF MODULE 2
+        
+//MODULE 3: PILLAR CONTROL
+        
+        rectangle_one.setPosition(x_rectangle_one, LOWER_BOUND_Y);
+        rectangle_two.setPosition(x_rectangle_one, UPPER_BOUND_Y);
+        rectangle_three.setPosition(x_rectangle_three, LOWER_BOUND_Y);
+        rectangle_four.setPosition(x_rectangle_three, UPPER_BOUND_Y);
+        rectangle_five.setPosition(x_rectangle_five, LOWER_BOUND_Y);
+        rectangle_six.setPosition(x_rectangle_five, UPPER_BOUND_Y);
         
         //moving pillars to the left and having them appear again
         if (x_rectangle_one >= 0)
@@ -164,7 +175,6 @@ int main(int, char const**)
             x_rectangle_one = 1000.0;
             random_y_scale = (int(rand()) % (2 - 1 + 1)) + 1;
             rectangle_one.setScale(1, random_y_scale);
-            //update_pillar(rectangle_one, x_rectangle_one, random_y_scale);
         }
         
         if (x_rectangle_three >= 0)
@@ -188,7 +198,9 @@ int main(int, char const**)
             rectangle_five.setScale(1, random_y_scale);
             x_rectangle_five = 1000.0;
         }
+//END OF MODULE 3
         
+//MODULE 4: INTERSECTION CONDITIONALS
         //create the bounding boxes for the six pillars
         sf::FloatRect adjusted_bounds_rect1 = adjusted_bounds(rectangle_one);
         sf::FloatRect adjusted_bounds_rect2 = adjusted_bounds(rectangle_two);
@@ -207,13 +219,17 @@ int main(int, char const**)
             || flappy_sprite_bounds.intersects(adjusted_bounds_rect6)
         )
         {
+            //if intersects stops game
             draw_sprite = false;
             drop_speed_of_bird = 0;
             speed_of_pillar_move = 0;
+            music.stop();
             text.setString("GAME OVER! :(");
             text_two.setString("Press R to play again.");
         }
-                
+//END OF MODULE 4
+        
+//MODULE 5: EVENT-BASED ACTIONS
         while (window.pollEvent(event))
         {
             //If User Wants to Play Game
@@ -222,7 +238,7 @@ int main(int, char const**)
                 window.clear();
                 draw_sprite = true;
                 game_screen_music.stop();
-                //music.play();
+                music.play();
                 drop_speed_of_bird = 0.25;
                 speed_of_pillar_move = 0.09;
                 text.setString(" ");
@@ -231,11 +247,12 @@ int main(int, char const**)
             
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R)
             {
+                //If wants to restart game, reset everything up including pillars, bird, and music
                 x_rectangle_one = -200.0;
                 x_rectangle_three = 500.0;
                 x_rectangle_five = 1000.0;
                 draw_sprite = true;
-                //music.play();
+                music.play();
                 drop_speed_of_bird = 0.25;
                 speed_of_pillar_move = 0.09;
                 text.setString(" ");
@@ -288,4 +305,6 @@ int main(int, char const**)
     }
 
     return EXIT_SUCCESS;
+    
+//END OF MODULE 5
 }
